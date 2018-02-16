@@ -5,41 +5,6 @@ import (
 	"github.com/aabizri/laposte"
 	"net/http"
 	"encoding/json"
-	"errors"
-)
-
-type TrackingStatus string
-
-const (
-	PrisEnCharge        TrackingStatus = "PRIS_EN_CHARGE"
-	EnLivraison         TrackingStatus = "EN_LIVRAISON"
-	Expedie             TrackingStatus = "EXPEDIE"
-	ARetirer            TrackingStatus = "A_RETIRER"
-	TriEffectue         TrackingStatus = "TRI_EFFECTUE"
-	Distribue           TrackingStatus = "DISTRIBUE"
-	Livre               TrackingStatus = "LIVRE"
-	DestinataireInforme TrackingStatus = "DESTINATAIRE_INFORME"
-	RetourDestinataire  TrackingStatus = "RETOUR_DESTINATAIRE"
-	Erreur              TrackingStatus = "ERREUR"
-	Inconnu             TrackingStatus = "INCONNU"
-)
-
-type Response struct {
-	/*
-	En cas de succès: le code donné
-	En cas d'échec: le code de l'erreur
-	 */
-	Code    string         `json:"code"`
-	Date    string         `json:"date,omitempty"` // DD/MM/YYYY
-	Status  TrackingStatus `json:"date,omitempty"`
-	Message string         `json:"message"`
-	Link    string         `json:"string,omitempty"`
-	Type    string         `json:"string,omitempty"`
-}
-
-var (
-	ErrNotFound error = errors.New("resource not found")
-	ErrBadCode  error = errors.New("bad code")
 )
 
 func (cl *Client) Track(id string) (*Response, error) {
@@ -68,14 +33,14 @@ func (cl *Client) Track(id string) (*Response, error) {
 		return nil, err
 	}
 
-	// Switch on responses
-	switch httpResp.StatusCode {
-	case 400:
-		return resp, ErrBadCode
-	case 404:
-		return resp, ErrNotFound
+	// Return an ErrorResponse in case of error
+	if httpResp.StatusCode != 200 {
+		return resp, ErrorResponse{
+			Code: ErrorCode(resp.Code),
+			Message: resp.Message,
+		}
 	}
 
-	// Else, we're done
+	// Else, we're done and we return the response directly
 	return resp, nil
 }
